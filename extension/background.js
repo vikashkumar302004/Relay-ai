@@ -6,7 +6,7 @@ const PROVIDER_URLS = {
 };
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({ relayEnabled: true, relayAlerts: true });
+  chrome.storage.local.set({ relayEnabled: true, relayAlerts: true, relayContextBudget: 128000 });
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

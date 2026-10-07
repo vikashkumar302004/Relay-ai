@@ -15,6 +15,12 @@
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
         <p class="relay-status">Relay reads only the visible conversation when you choose a destination.</p>
+        <div class="relay-meter">
+          <div class="relay-meter-head"><span>VISIBLE CONTEXT</span><b class="relay-used">Calculating…</b></div>
+          <div class="relay-meter-track"><i></i></div>
+          <div class="relay-metrics"><span><b class="relay-remaining">—</b> estimated remaining</span><span><b class="relay-saving">—</b> capsule saving</span></div>
+          <small>Visible-text estimate—not your provider account quota.</small>
+        </div>
         <div class="relay-providers"></div>
         <footer>Local-first · No passwords · Never auto-sends</footer>
       </div>
@@ -29,10 +35,12 @@
   const providerList = root.querySelector('.relay-providers');
   const ready = root.querySelector('.relay-ready');
   let limitAlerted = false;
+  let latestHandoff = null;
 
   function setOpen(open) {
     panel.classList.toggle('is-open', open);
     panel.setAttribute('aria-hidden', String(!open));
+    if (open) refreshMetrics();
   }
 
   function showToast(message) {
@@ -76,13 +84,26 @@
     return nodes.slice(-30).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }));
   }
 
-  function createHandoff(target) {
+  async function refreshMetrics() {
     const messages = extractMessages();
-    const capsule = core.buildCapsule({ provider, title: document.title, url: location.href, messages });
+    const { relayContextBudget = 128000 } = await chrome.storage.local.get('relayContextBudget');
+    latestHandoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
+    const { stats } = latestHandoff;
+    root.querySelector('.relay-used').textContent = `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}%`;
+    root.querySelector('.relay-remaining').textContent = `~${stats.remainingTokens.toLocaleString()}`;
+    root.querySelector('.relay-saving').textContent = `${stats.savedPercent}%`;
+    root.querySelector('.relay-meter-track i').style.width = `${Math.max(2, stats.usedPercent)}%`;
+    providerList.querySelectorAll('.relay-provider small').forEach((small) => { small.textContent = `~${stats.capsuleTokens.toLocaleString()} tokens to carry →`; });
+  }
+
+  async function createHandoff(target) {
+    const messages = extractMessages();
+    const { relayContextBudget = 128000 } = await chrome.storage.local.get('relayContextBudget');
+    const handoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     chrome.runtime.sendMessage({
       type: 'relay-switch',
       target,
-      handoff: { capsule, source: provider, sourceName: providerConfig.name, messageCount: messages.length }
+      handoff: { capsule: handoff.capsule, stats: handoff.stats, source: provider, sourceName: providerConfig.name, messageCount: messages.length }
     });
     showToast(`Opening ${core.PROVIDERS[target].name}…`);
   }
@@ -158,6 +179,7 @@
   close.addEventListener('click', () => setOpen(false));
   root.querySelector('.relay-insert').addEventListener('click', insertPending);
   checkPending();
+  refreshMetrics();
   detectLimit();
   new MutationObserver(scheduleLimitCheck).observe(document.body, { childList: true, subtree: true });
 })();
