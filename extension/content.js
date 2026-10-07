@@ -50,6 +50,7 @@
     </section>
     <div class="relay-toast" role="status"></div>`;
   document.documentElement.appendChild(root);
+  if (provider !== 'claude') root.querySelector('.relay-account').hidden = true;
 
   const fab = root.querySelector('.relay-fab');
   const panel = root.querySelector('.relay-panel');
@@ -101,6 +102,7 @@
   }
 
   function renderAccountUsage(pageText = document.body.innerText) {
+    if (provider !== 'claude') return;
     const accountValue = root.querySelector('.relay-account-value');
     const accountNote = root.querySelector('.relay-account-note');
     if (provider === 'claude' && claudeUsage) {
