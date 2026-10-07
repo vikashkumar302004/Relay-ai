@@ -12,12 +12,14 @@ Relay is an original, local-first Windows desktop app for keeping useful project
 - Focus Queue, usage insights, backup/restore, and diagnostics
 - Windows NSIS installer packaging
 - Standalone download website in [`website/`](website/)
+- Chrome/Edge continuity extension in [`extension/`](extension/)
 
 ## Project structure
 
 ```text
 Relay-ai/
 ├── assets/             App icons and bundled assets
+├── extension/          Chrome/Edge Manifest V3 extension
 ├── src/                React renderer
 ├── tests/              Node and Electron smoke tests
 ├── website/            Public download dashboard
@@ -62,10 +64,13 @@ npm run build
 
 The generated installer is written to `release/` and intentionally excluded from Git. Distribute installers through GitHub Releases or the hosted download dashboard instead of committing binaries to source control.
 
+## Try the browser extension
+
+Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the repository's `extension` folder. Relay then appears inside Claude, ChatGPT, Gemini, and Perplexity. See [`extension/README.md`](extension/README.md) for details.
+
 ## Current release
 
 - Version: `1.4.0`
 - Platform: Windows x64
 - Installer SHA-256: `94F75375640C723F00856F548B30D0590C14D41354941F060929800C54D3BAD7`
 - Download dashboard: <https://relay-download.skljskl.chatgpt.site>
-
