@@ -38,8 +38,8 @@
         <div class="relay-meter">
           <div class="relay-meter-head"><span>VISIBLE CONTEXT</span><b class="relay-used">Calculating…</b></div>
           <div class="relay-meter-track"><i></i></div>
-          <div class="relay-metrics"><span><b class="relay-remaining">—</b> estimated remaining</span><span><b class="relay-saving">—</b> capsule saving</span></div>
-          <small>Visible-text estimate—not your provider account quota.</small>
+          <div class="relay-metrics"><span><b class="relay-remaining">—</b> context room</span><span><b class="relay-saving">—</b> handoff capsule</span></div>
+          <small>Conversation context estimate. Account usage is shown separately above.</small>
         </div>
         <div class="relay-providers"></div>
         <footer>Local-first · No passwords · Never auto-sends</footer>
@@ -83,6 +83,12 @@
     if (minutes < 60) return `${minutes}m`;
     const hours = Math.floor(minutes / 60);
     return `${hours}h ${minutes % 60}m`;
+  }
+
+  function compactNumber(value) {
+    if (!Number.isFinite(value)) return '—';
+    if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
+    return value.toLocaleString();
   }
 
   function requestClaudeUsage() {
@@ -159,8 +165,8 @@
     const { stats } = latestHandoff;
     const hasConversation = messages.some((message) => core.cleanText(message.text).length > 2);
     root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}%` : 'No conversation yet';
-    root.querySelector('.relay-remaining').textContent = hasConversation ? `~${stats.remainingTokens.toLocaleString()}` : '—';
-    root.querySelector('.relay-saving').textContent = hasConversation ? `${stats.savedPercent}%` : '—';
+    root.querySelector('.relay-remaining').textContent = hasConversation ? `~${compactNumber(stats.remainingTokens)}` : '—';
+    root.querySelector('.relay-saving').textContent = hasConversation ? `~${compactNumber(stats.capsuleTokens)} tokens` : '—';
     root.querySelector('.relay-meter-track i').style.width = hasConversation ? `${Math.max(2, stats.usedPercent)}%` : '0%';
     providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} tokens to carry →` : 'Start a conversation first'; });
   }
