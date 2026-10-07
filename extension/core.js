@@ -71,6 +71,18 @@
     });
   }
 
+  function collectSignals(messages, pattern, limit = 6) {
+    return messages
+      .flatMap((message) => cleanText(message.text).split(/(?<=[.!?])\s+/).map((text) => ({ role: message.role, text })))
+      .filter((item) => item.text.length > 8 && pattern.test(item.text))
+      .slice(-limit);
+  }
+
+  function bulletSection(title, items, fallback) {
+    const lines = items.map((item) => `- ${item.text || item}`);
+    return [`## ${title}`, ...(lines.length ? lines : [`- ${fallback}`]), ''];
+  }
+
   function buildHandoff({ provider, title, url, messages, maxChars = 14000, contextBudget = 128000 }) {
     const clean = uniqueMessages(messages.map((message, index) => ({
       role: message.role || (index % 2 ? 'assistant' : 'user'),
@@ -86,9 +98,11 @@
     }
     const userMessages = clean.filter((message) => message.role === 'user');
     const latestUser = userMessages.at(-1)?.text || clean.at(-1)?.text || 'Continue from the latest unfinished task.';
-    const signal = clean.flatMap((message) => message.text.split(/(?<=[.!?])\s+/).map((text) => ({ role: message.role, text })))
-      .filter((item) => /decid|must|should|need|next|error|fail|fix|complete|done|implement|build|require/i.test(item.text))
-      .slice(-8);
+    const completed = collectSignals(clean, /\b(done|completed|finished|fixed|created|built|implemented|added|updated|resolved|working)\b/i);
+    const decisions = collectSignals(clean, /\b(decided|choose|chosen|using|must|should|keep|avoid|require|constraint)\b/i);
+    const blockers = collectSignals(clean, /\b(error|failed|failing|blocked|issue|problem|bug|cannot|can't|not working)\b/i);
+    const nextSteps = collectSignals(clean, /\b(next|todo|remaining|then|after that|need to|should now)\b/i);
+    const files = [...new Set(clean.flatMap((message) => message.text.match(/(?:[\w.-]+[\\/])*[\w.-]+\.(?:js|jsx|ts|tsx|json|css|html|md|py|java|cpp|c|h|yml|yaml|toml|docx|pdf)/gi) || []))].slice(-8);
     const capsule = [
       '# Relay Context Capsule',
       `Source: ${PROVIDERS[provider]?.name || provider || 'AI'} · ${title || 'Untitled conversation'}`,
@@ -99,7 +113,11 @@
       '## Current objective',
       latestUser,
       '',
-      ...(signal.length ? ['## Important decisions, progress, and blockers', ...signal.map((item) => `- (${item.role}) ${item.text}`), ''] : []),
+      ...bulletSection('Completed work', completed, 'No completed work was clearly detected.'),
+      ...bulletSection('Important decisions', decisions, 'No explicit decisions were detected.'),
+      ...bulletSection('Files and code involved', files, 'No file names were detected in the readable chat.'),
+      ...bulletSection('Errors and blockers', blockers, 'No active blocker was clearly detected.'),
+      ...bulletSection('Exact next step', nextSteps, latestUser),
       '## Recent conversation',
       selected.join('\n\n') || 'No readable conversation messages were found. Ask the user for the missing context.'
     ].filter(Boolean).join('\n');

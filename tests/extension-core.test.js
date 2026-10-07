@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const core = require('../extension/core.js');
+const adapters = require('../extension/provider-adapters.js');
 
 test('detects supported providers by hostname', () => {
   assert.equal(core.providerFromHost('claude.ai'), 'claude');
@@ -51,5 +52,30 @@ test('builds a bounded handoff capsule with recent context', () => {
   });
   assert.match(capsule, /Relay Context Capsule/);
   assert.match(capsule, /Now add context switching/);
-  assert.ok(capsule.length < 700);
+  assert.ok(capsule.length < 2000);
+});
+
+test('keeps provider message adapters separate', () => {
+  for (const provider of ['claude', 'chatgpt', 'gemini', 'perplexity']) {
+    const adapter = adapters.get(provider);
+    assert.ok(adapter);
+    assert.ok(adapter.selectors.length >= 3);
+    assert.equal(typeof adapter.role, 'function');
+  }
+});
+
+test('organizes handoff context into useful sections', () => {
+  const result = core.buildHandoff({
+    provider: 'chatgpt',
+    title: 'Relay work',
+    url: 'https://chatgpt.com/c/example',
+    messages: [
+      { role: 'user', text: 'Build the provider adapter in content.js. The current bug is not working on ChatGPT.' },
+      { role: 'assistant', text: 'Implemented provider-adapters.js and fixed the selector issue.' },
+      { role: 'user', text: 'Next, test the extension and update manifest.json.' }
+    ]
+  });
+  for (const heading of ['Current objective', 'Completed work', 'Important decisions', 'Files and code involved', 'Errors and blockers', 'Exact next step']) {
+    assert.match(result.capsule, new RegExp(`## ${heading}`));
+  }
 });

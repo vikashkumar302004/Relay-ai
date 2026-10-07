@@ -1,5 +1,6 @@
 (() => {
   const core = globalThis.RelayCore;
+  const adapter = globalThis.RelayProviderAdapters?.get(core.providerFromHost(location.hostname));
   const provider = core.providerFromHost(location.hostname);
   if (!provider || document.getElementById('relay-extension-root')) return;
 
@@ -7,6 +8,7 @@
   let claudeUsage = null;
   let claudeCacheUntil = null;
   let claudeUsageRequestedAt = 0;
+  let usageAlertLevel = null;
 
   if (provider === 'claude') {
     const script = document.createElement('script');
@@ -40,6 +42,7 @@
           <div class="relay-meter-track"><i></i></div>
           <div class="relay-metrics"><span><b class="relay-remaining">—</b> context room</span><span><b class="relay-saving">—</b> handoff capsule</span></div>
           <small>Estimated from messages Relay can read in this chat—not your Claude account quota.</small>
+          <button class="relay-retry-chat" type="button">Retry chat detection</button>
         </div>
         <div class="relay-providers"></div>
         <footer>Local-first · No passwords · Never auto-sends</footer>
@@ -109,6 +112,19 @@
       const cacheText = claudeCacheUntil && claudeCacheUntil > Date.now() ? ` · cache ${countdown(claudeCacheUntil)}` : '';
       accountNote.textContent = `Claude's signed-in account usage${cacheText}`;
       root.querySelector('.relay-account').classList.add('is-exact');
+      const remaining = claudeUsage.session?.remainingPercent;
+      const level = remaining <= 0 ? 'limit' : remaining <= 10 ? '10' : remaining <= 25 ? '25' : null;
+      if (level && level !== usageAlertLevel) {
+        usageAlertLevel = level;
+        const message = level === 'limit'
+          ? 'Claude limit reached. Choose another AI to continue.'
+          : `Claude has ${Math.round(remaining)}% left. Your chat is ready to carry.`;
+        root.querySelector('.relay-status').textContent = message;
+        fab.classList.add('has-alert');
+        showToast(message);
+      } else if (!level) {
+        usageAlertLevel = null;
+      }
       return;
     }
     const visible = core.parseVisibleUsage(pageText);
@@ -125,6 +141,7 @@
   }
 
   function elementRole(element, index) {
+    if (adapter?.role) return adapter.role(element, index);
     const explicit = element.getAttribute('data-message-author-role');
     if (explicit) return explicit;
     const label = `${element.getAttribute('aria-label') || ''} ${element.getAttribute('data-testid') || ''} ${element.tagName || ''} ${element.className || ''}`;
@@ -140,21 +157,8 @@
   }
 
   function extractMessages() {
-    const providerSelectors = {
-      chatgpt: ['main [data-message-author-role]', 'main article[data-testid^="conversation-turn-"]'],
-      claude: [
-        '[data-testid="user-message"]',
-        '[data-testid*="assistant-message"]',
-        '[data-testid^="chat-message"]',
-        '.font-claude-response',
-        '[class*="font-user-message"]',
-        '[data-is-streaming="true"]'
-      ],
-      gemini: ['main user-query', 'main model-response', 'main .query-content', 'main .response-container-content'],
-      perplexity: ['main [data-testid*="query"]', 'main [data-testid*="answer"]', 'main .prose']
-    };
-    const candidates = (providerSelectors[provider] || []).flatMap((selector) => [...document.querySelectorAll(selector)]);
-    const generic = candidates.length ? candidates : [...document.querySelectorAll('main [data-message-author-role], main article, main [data-testid*="message"]')];
+    const candidates = (adapter?.selectors || []).flatMap((selector) => [...document.querySelectorAll(selector)]);
+    const generic = candidates.length ? candidates : [...document.querySelectorAll('[data-message-author-role], [data-testid^="conversation-turn-"], main article, main [data-testid*="message"]')];
     const ordered = [...new Set(generic)]
       .filter((element) => !element.closest('#relay-extension-root') && visible(element))
       .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
@@ -171,11 +175,14 @@
     latestHandoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     const { stats } = latestHandoff;
     const hasConversation = messages.some((message) => core.cleanText(message.text).length > 2);
-    root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}% of room` : 'No readable messages';
+    root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}% of room` : 'Messages not detected';
     root.querySelector('.relay-remaining').textContent = hasConversation ? `~${compactNumber(stats.remainingTokens)}` : '—';
     root.querySelector('.relay-saving').textContent = hasConversation ? `~${compactNumber(stats.capsuleTokens)} tokens` : '—';
     root.querySelector('.relay-meter-track i').style.width = hasConversation ? `${Math.max(2, stats.usedPercent)}%` : '0%';
-    providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} estimated tokens to carry →` : 'No readable chat messages yet'; });
+    providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} estimated tokens to carry →` : 'Messages not detected—retry'; });
+    root.querySelector('.relay-meter>small').textContent = hasConversation
+      ? 'Estimated locally from readable messages—not your provider account quota.'
+      : 'Messages detect nahi hue—chat load hone do, then tap retry.';
   }
 
   async function createHandoff(target) {
@@ -300,6 +307,11 @@
   close.addEventListener('click', () => setOpen(false));
   root.querySelector('.relay-insert').addEventListener('click', insertPending);
   root.querySelector('.relay-refresh-usage').addEventListener('click', () => { claudeUsageRequestedAt = 0; requestClaudeUsage(); showToast('Refreshing usage…'); });
+  root.querySelector('.relay-retry-chat').addEventListener('click', () => {
+    refreshMetrics();
+    [500, 1400].forEach((delay) => setTimeout(refreshMetrics, delay));
+    showToast('Checking this chat again…');
+  });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes.relayPendingHandoff) return;
     const next = changes.relayPendingHandoff.newValue;
