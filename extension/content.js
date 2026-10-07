@@ -102,7 +102,7 @@
   function elementRole(element, index) {
     const explicit = element.getAttribute('data-message-author-role');
     if (explicit) return explicit;
-    const label = `${element.getAttribute('aria-label') || ''} ${element.className || ''}`;
+    const label = `${element.getAttribute('aria-label') || ''} ${element.getAttribute('data-testid') || ''} ${element.tagName || ''} ${element.className || ''}`;
     if (/user|human|query|prompt/i.test(label)) return 'user';
     if (/assistant|claude|answer|response|model/i.test(label)) return 'assistant';
     return index % 2 ? 'assistant' : 'user';
@@ -115,23 +115,19 @@
   }
 
   function extractMessages() {
-    const selectors = [
-      '[data-message-author-role]',
-      'main article',
-      'main [data-testid*="message"]',
-      'main [class*="conversation-turn"]',
-      'main [class*="message"]'
-    ];
-    let nodes = [];
-    for (const selector of selectors) {
-      const found = [...document.querySelectorAll(selector)].filter(visible);
-      if (found.length >= 2) { nodes = found; break; }
-    }
-    if (!nodes.length) {
-      const main = document.querySelector('main');
-      if (main) nodes = [...main.querySelectorAll('p')].filter(visible);
-    }
-    return nodes.slice(-30).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }));
+    const providerSelectors = {
+      chatgpt: ['main [data-message-author-role]', 'main article[data-testid^="conversation-turn-"]'],
+      claude: ['main [data-testid="user-message"]', 'main [data-testid*="assistant"]', 'main .font-claude-response', 'main [class*="font-user-message"]'],
+      gemini: ['main user-query', 'main model-response', 'main .query-content', 'main .response-container-content'],
+      perplexity: ['main [data-testid*="query"]', 'main [data-testid*="answer"]', 'main .prose']
+    };
+    const candidates = (providerSelectors[provider] || []).flatMap((selector) => [...document.querySelectorAll(selector)]);
+    const generic = candidates.length ? candidates : [...document.querySelectorAll('main [data-message-author-role], main article, main [data-testid*="message"]')];
+    const ordered = [...new Set(generic)]
+      .filter((element) => !element.closest('#relay-extension-root') && visible(element))
+      .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+    return ordered.slice(-40).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
+      .filter((message) => core.cleanText(message.text).length > 2);
   }
 
   async function refreshMetrics() {
@@ -172,22 +168,24 @@
   });
 
   function findComposer() {
-    const candidates = [
-      'textarea',
-      '[contenteditable="true"][role="textbox"]',
-      'div[contenteditable="true"]',
-      '.ProseMirror[contenteditable="true"]'
-    ];
+    const byProvider = {
+      chatgpt: ['#prompt-textarea', '[contenteditable="true"][data-virtualkeyboard="true"]'],
+      claude: ['div.ProseMirror[contenteditable="true"]', '[contenteditable="true"][role="textbox"]'],
+      gemini: ['rich-textarea [contenteditable="true"]', '.ql-editor[contenteditable="true"]'],
+      perplexity: ['textarea[placeholder]', '[contenteditable="true"][role="textbox"]']
+    };
+    const candidates = [...(byProvider[provider] || []), 'textarea', '[contenteditable="true"][role="textbox"]', 'div[contenteditable="true"]'];
     return candidates.map((selector) => [...document.querySelectorAll(selector)]).flat().find(visible);
   }
 
   async function insertPending() {
     const { relayPendingHandoff } = await chrome.storage.local.get('relayPendingHandoff');
     if (!relayPendingHandoff || relayPendingHandoff.target !== provider) return;
+    await navigator.clipboard.writeText(relayPendingHandoff.capsule).catch(() => {});
     const composer = findComposer();
     if (!composer) {
-      await navigator.clipboard.writeText(relayPendingHandoff.capsule);
       showToast('Composer not found. Context copied—press Ctrl+V.');
+      await chrome.storage.local.remove('relayPendingHandoff');
       return;
     }
     composer.focus();
@@ -196,12 +194,14 @@
       setter?.call(composer, relayPendingHandoff.capsule);
       composer.dispatchEvent(new Event('input', { bubbles: true }));
     } else {
-      document.execCommand('insertText', false, relayPendingHandoff.capsule);
+      const inserted = document.execCommand('insertText', false, relayPendingHandoff.capsule);
+      if (!inserted) composer.textContent = relayPendingHandoff.capsule;
       composer.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: relayPendingHandoff.capsule }));
     }
+    const insertedText = composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement ? composer.value : composer.innerText;
     await chrome.storage.local.remove('relayPendingHandoff');
     ready.hidden = true;
-    showToast('Context inserted. Review it, then send.');
+    showToast(insertedText.includes('Relay Context Capsule') ? 'Context inserted. Review it, then send.' : 'Context copied—press Ctrl+V in the message box.');
   }
 
   async function checkPending() {

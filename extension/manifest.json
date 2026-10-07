@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Relay — Switch AI, Keep Context",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Carry the useful context from one AI conversation into another without starting over.",
-  "permissions": ["storage", "tabs", "notifications"],
+  "permissions": ["storage", "tabs", "notifications", "clipboardWrite"],
   "host_permissions": [
     "https://claude.ai/*",
     "https://chatgpt.com/*",
