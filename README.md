@@ -2,6 +2,14 @@
 
 Relay is an original, local-first Windows desktop app for keeping useful project context while moving between AI tools. It supports local Claude Code and Codex session discovery, plus a free web handoff flow for Claude, ChatGPT, Gemini, and Perplexity without provider API keys.
 
+[![Release](https://img.shields.io/badge/desktop-1.4.0-82f4ca)](https://relay-download.skljskl.chatgpt.site)
+[![Extension](https://img.shields.io/badge/extension-0.4.1-a98cff)](website/Relay-Extension-0.4.1.zip)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Chrome%20%7C%20Edge-15171a)](#run-locally)
+
+**Switch the AI. Keep the thread.**
+
+[Download Relay](https://relay-download.skljskl.chatgpt.site) · [Meet the creator](https://relay-download.skljskl.chatgpt.site/about.html) · [Extension guide](extension/README.md)
+
 ## What it includes
 
 - Electron tray app with a React + Vite interface
@@ -71,6 +79,11 @@ Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and
 ## Current release
 
 - Version: `1.4.0`
+- Browser extension: `0.4.1`
 - Platform: Windows x64
 - Installer SHA-256: `94F75375640C723F00856F548B30D0590C14D41354941F060929800C54D3BAD7`
 - Download dashboard: <https://relay-download.skljskl.chatgpt.site>
+
+## Creator
+
+Relay is designed and built by [Vikash Kumar](https://github.com/vikashkumar302004) as an independent, local-first continuity tool for people who work across multiple AI providers.
