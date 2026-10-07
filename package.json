@@ -1,8 +1,9 @@
 {
   "name": "relay",
   "version": "1.4.0",
-  "author": "Relay Labs",
-  "description": "AI Session Manager for Windows — Context Switch without losing a single token",
+  "author": "Vikash Kumar",
+  "license": "SEE LICENSE IN LICENSE",
+  "description": "Local-first AI continuity tool for carrying useful context between providers",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
