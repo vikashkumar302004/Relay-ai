@@ -1,89 +1,170 @@
-# Relay
+<div align="center">
 
-Relay is an original, local-first Windows desktop app for keeping useful project context while moving between AI tools. It supports local Claude Code and Codex session discovery, plus a free web handoff flow for Claude, ChatGPT, Gemini, and Perplexity without provider API keys.
+# ⚡ Relay
 
-[![Release](https://img.shields.io/badge/desktop-1.4.0-82f4ca)](https://relay-download.skljskl.chatgpt.site)
-[![Extension](https://img.shields.io/badge/extension-0.5.3-a98cff)](website/Relay-Extension-0.5.3.zip)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Chrome%20%7C%20Edge-15171a)](#run-locally)
+### Switch the AI. Keep the thread.
 
-**Switch the AI. Keep the thread.**
+Relay is a local-first browser extension and Windows companion that carries useful working context between Claude, ChatGPT, Gemini, and Perplexity—without asking you to explain the same task again.
 
-[Download Relay](https://relay-download.skljskl.chatgpt.site) · [Meet the creator](https://relay-download.skljskl.chatgpt.site/about.html) · [Extension guide](extension/README.md)
+[Download Extension v0.5.3](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.3.zip) · [Open Website](https://vikashkumar302004.github.io/Relay-ai/) · [Meet the Creator](https://vikashkumar302004.github.io/Relay-ai/about.html)
 
-## What it includes
+![Extension](https://img.shields.io/badge/Extension-v0.5.3-a98cff?style=for-the-badge)
+![Desktop](https://img.shields.io/badge/Desktop-v1.4.0-82f4ca?style=for-the-badge)
+![Tests](https://img.shields.io/badge/Tests-12%2F12-37c99b?style=for-the-badge)
+![Privacy](https://img.shields.io/badge/Privacy-Local--first-15171a?style=for-the-badge)
 
-- Electron tray app with a React + Vite interface
-- Global `Ctrl+Shift+Space` launcher
+</div>
+
+---
+
+## Why Relay?
+
+Long AI conversations contain decisions, completed work, file names, errors, and the exact next step. When a provider slows down or reaches a limit, moving to another AI usually means copying fragments and explaining everything again.
+
+Relay turns the current conversation into a structured handoff:
+
+- **Current objective**
+- **Completed work**
+- **Important decisions**
+- **Files and code involved**
+- **Errors and blockers**
+- **Exact next step**
+
+You review the handoff before inserting or sending it. Relay never submits a message automatically.
+
+## Supported AI providers
+
+| Provider | Read current chat | Receive a handoff | Account usage |
+|---|:---:|:---:|:---:|
+| Claude | ✅ | ✅ | ✅ When Claude exposes signed-in usage |
+| ChatGPT | ✅ | ✅ | Not guessed |
+| Gemini | ✅ | ✅ | Not guessed |
+| Perplexity | ✅ | ✅ | Not guessed |
+
+The **This Chat · Estimate** meter is available across providers. It estimates the size of readable messages locally; it is not an account quota or official provider token count.
+
+## Browser extension
+
+### Install
+
+1. Download [Relay-Extension-0.5.3.zip](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.3.zip).
+2. Extract the ZIP.
+3. Open <code>chrome://extensions</code> in Chrome or <code>edge://extensions</code> in Edge.
+4. Enable **Developer mode**.
+5. Choose **Load unpacked** and select the extracted folder.
+6. Refresh any open Claude, ChatGPT, Gemini, or Perplexity tabs.
+
+### Use
+
+1. Open a conversation on a supported AI website.
+2. Open the Relay panel.
+3. Check the detected chat estimate.
+4. Choose the AI you want to continue with.
+5. Review the prepared context and insert it into the destination chat.
+
+If a provider changes its page structure, Relay displays **Messages not detected—retry** instead of silently producing an empty handoff.
+
+## What v0.5.3 includes
+
+- Separate message adapters for Claude, ChatGPT, Gemini, and Perplexity
+- Automatic chat and route-change detection
+- Manual chat-detection retry
+- Structured context capsules
+- ChatGPT and Gemini layout fallbacks
+- Claude five-hour and weekly usage when exact signed-in data is available
+- Claude alerts at 25%, 10%, and limit reached
+- Larger, readable panel typography
+- Local clipboard fallback when a destination composer cannot be found
+
+## Privacy and control
+
+- Conversations are processed inside the browser.
+- Relay does not run a conversation collection server.
+- Provider passwords and session cookies are never stored by Relay.
+- No provider API key is required for browser handoffs.
+- A handoff is never submitted without the user.
+- Account-usage numbers are shown only when exact provider data is available.
+
+## Windows companion
+
+The repository also contains the original Electron desktop companion:
+
+- System-tray launcher
+- Global <code>Ctrl+Shift+Space</code> shortcut
 - Local Claude Code and Codex session discovery
 - Resume, search, rename, pin, tags, and notes
-- Free web handoff composer with reusable local memory
-- Focus Queue, usage insights, backup/restore, and diagnostics
-- Windows NSIS installer packaging
-- Standalone download website in [`website/`](website/)
-- Chrome/Edge continuity extension in [`extension/`](extension/)
+- Focus Queue and diagnostics
+- Local backup and restore
+- Windows NSIS packaging
 
 ## Project structure
 
-```text
+~~~text
 Relay-ai/
-├── assets/             App icons and bundled assets
 ├── extension/          Chrome/Edge Manifest V3 extension
-├── src/                React renderer
-├── tests/              Node and Electron smoke tests
-├── website/            Public download dashboard
+├── website/            Download website and About page
+├── src/                React desktop renderer
+├── tests/              Extension and desktop tests
+├── assets/             App icons and assets
 ├── main.js             Electron main process
 ├── preload.js          Secure renderer bridge
-├── sessions.js         Local session discovery and persistence
-├── index.html          Vite entry document
+├── sessions.js         Local session discovery
 ├── vite.config.js      Renderer build configuration
-└── package.json        Scripts and Windows packaging config
-```
+└── package.json        Scripts and packaging
+~~~
 
-`creo-main` is not part of this repository. Relay's code, interface, and product identity are maintained independently.
+## Local development
 
-## Run locally
+Requirements: Node.js 18+ and Windows 10/11 for the desktop app.
 
-Requirements: Windows 10/11 and Node.js 18 or newer.
-
-```powershell
+~~~powershell
+git clone https://github.com/vikashkumar302004/Relay-ai.git
+cd Relay-ai
 npm install
 npm run dev
-```
+~~~
 
-For the packaged-style Electron run:
+Run the packaged-style desktop app:
 
-```powershell
+~~~powershell
 npm run build:renderer
 npm start
-```
+~~~
 
-## Verify
+Run verification:
 
-```powershell
+~~~powershell
 npm run check
 npm test
-```
+~~~
 
-## Build the Windows installer
+Current automated result: **12 tests passed**.
 
-```powershell
-npm run build
-```
+## Releases
 
-The generated installer is written to `release/` and intentionally excluded from Git. Distribute installers through GitHub Releases or the hosted download dashboard instead of committing binaries to source control.
+| Component | Version | Download |
+|---|---:|---|
+| Browser extension | 0.5.3 | [ZIP](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.3.zip) |
+| Windows desktop | 1.4.0 | Website installer section |
 
-## Try the browser extension
+## Roadmap
 
-Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the repository's `extension` folder. Relay then appears inside Claude, ChatGPT, Gemini, and Perplexity. See [`extension/README.md`](extension/README.md) for details.
-
-## Current release
-
-- Version: `1.4.0`
-- Browser extension: `0.5.3`
-- Platform: Windows x64
-- Installer SHA-256: `94F75375640C723F00856F548B30D0590C14D41354941F060929800C54D3BAD7`
-- Download dashboard: <https://relay-download.skljskl.chatgpt.site>
+- Editable handoff preview
+- Recent handoff history
+- Reusable project memory
+- Provider-adapter diagnostics
+- Chrome Web Store submission when publisher registration is ready
 
 ## Creator
 
-Relay is designed and built by [Vikash Kumar](https://github.com/vikashkumar302004) as an independent, local-first continuity tool for people who work across multiple AI providers.
+Relay is independently designed and built by [Vikash Kumar](https://github.com/vikashkumar302004).
+
+The product identity, interface, and implementation are maintained independently. <code>creo-main</code> is not part of this repository.
+
+---
+
+<div align="center">
+
+**One thread. Any AI.**
+
+</div>
