@@ -41,14 +41,22 @@
     gemini: {
       selectors: [
         'user-query',
+        'user-query .query-text',
         'model-response',
+        'model-response .model-response-text',
+        'message-content',
         '.query-content',
         '.response-container-content',
         '[data-test-id*="query"]',
-        '[data-test-id*="response"]'
+        '[data-test-id*="response"]',
+        '[data-testid*="query"]',
+        '[data-testid*="response"]',
+        '[class*="user-query"]',
+        '[class*="model-response"]'
       ],
       role(element, index) {
-        const marker = `${element.tagName || ''} ${element.className || ''} ${element.getAttribute('data-test-id') || ''}`;
+        const owner = element.closest('user-query, model-response, [class*="user-query"], [class*="model-response"]');
+        const marker = `${owner?.tagName || element.tagName || ''} ${owner?.className || element.className || ''} ${element.getAttribute('data-test-id') || ''} ${element.getAttribute('data-testid') || ''}`;
         if (/user|query/i.test(marker)) return 'user';
         if (/model|response|answer/i.test(marker)) return 'assistant';
         return index % 2 ? 'assistant' : 'user';

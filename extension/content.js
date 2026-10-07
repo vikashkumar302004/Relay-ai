@@ -214,7 +214,14 @@
     const byProvider = {
       chatgpt: ['#prompt-textarea', '[contenteditable="true"][data-virtualkeyboard="true"]'],
       claude: ['div.ProseMirror[contenteditable="true"]', '[contenteditable="true"][role="textbox"]'],
-      gemini: ['rich-textarea [contenteditable="true"]', '.ql-editor[contenteditable="true"]'],
+      gemini: [
+        'rich-textarea [contenteditable="true"]',
+        '.ql-editor[contenteditable="true"]',
+        '[contenteditable="true"][role="textbox"]',
+        '[contenteditable="true"][aria-label*="prompt" i]',
+        '[contenteditable="true"][aria-label*="message" i]',
+        'textarea[aria-label*="prompt" i]'
+      ],
       perplexity: ['textarea[placeholder]', '[contenteditable="true"][role="textbox"]']
     };
     const candidates = [...(byProvider[provider] || []), 'textarea', '[contenteditable="true"][role="textbox"]', 'div[contenteditable="true"]'];
