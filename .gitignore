@@ -1,0 +1,19 @@
+node_modules/
+dist/
+release/
+coverage/
+*.log
+*.tmp
+*.tar.gz
+*.exe
+*.part*
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+
+# Reference material is intentionally not part of Relay.
+creo-main/
+**/creo-main/
+
