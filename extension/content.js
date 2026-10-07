@@ -158,12 +158,16 @@
 
   function extractMessages() {
     const candidates = (adapter?.selectors || []).flatMap((selector) => [...document.querySelectorAll(selector)]);
-    const generic = candidates.length ? candidates : [...document.querySelectorAll('[data-message-author-role], [data-testid^="conversation-turn-"], main article, main [data-testid*="message"]')];
+    const fallbackSelectors = provider === 'chatgpt'
+      ? '[data-message-author-role], [data-turn-id], [data-message-id], [data-message-model-slug], [role="main"] article, main article'
+      : '[data-message-author-role], [data-testid^="conversation-turn-"], main article, main [data-testid*="message"]';
+    const generic = candidates.length ? candidates : [...document.querySelectorAll(fallbackSelectors)];
     const ordered = [...new Set(generic)]
       .filter((element) => !element.closest('#relay-extension-root') && visible(element))
       .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
-    return ordered.slice(-60).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
+    const messages = ordered.slice(-80).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
       .filter((message) => core.cleanText(message.text).length > 2);
+    return core.uniqueMessages(messages);
   }
 
   async function refreshMetrics() {
@@ -182,7 +186,7 @@
     providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} estimated tokens to carry →` : 'Messages not detected—retry'; });
     root.querySelector('.relay-meter>small').textContent = hasConversation
       ? 'Estimated locally from readable messages—not your provider account quota.'
-      : 'Messages detect nahi hue—chat load hone do, then tap retry.';
+      : `Messages detect nahi hue—chat load hone do, then tap retry. Adapter: ${providerConfig.name}.`;
   }
 
   async function createHandoff(target) {

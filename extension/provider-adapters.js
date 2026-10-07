@@ -20,13 +20,20 @@
       selectors: [
         '[data-message-author-role]',
         '[data-testid^="conversation-turn-"]',
-        'article[data-testid*="conversation"]'
+        'article[data-testid*="conversation"]',
+        '[data-turn-id]',
+        '[data-message-id]',
+        '[data-message-model-slug]',
+        '[class*="conversation-turn"]',
+        '[role="main"] article'
       ],
       role(element, index) {
         const explicit = element.getAttribute('data-message-author-role')
           || element.querySelector('[data-message-author-role]')?.getAttribute('data-message-author-role');
         if (explicit) return explicit;
-        const marker = element.getAttribute('data-testid') || '';
+        const marker = `${element.getAttribute('data-testid') || ''} ${element.getAttribute('data-message-model-slug') || ''} ${element.className || ''}`;
+        if (/user|human/i.test(marker)) return 'user';
+        if (/assistant|model|response/i.test(marker)) return 'assistant';
         const turn = Number(marker.match(/(\d+)$/)?.[1]);
         return Number.isFinite(turn) ? (turn % 2 ? 'assistant' : 'user') : (index % 2 ? 'assistant' : 'user');
       }
