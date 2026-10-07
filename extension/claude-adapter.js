@@ -15,7 +15,23 @@
       const response = await fetch(`/api/organizations/${encodeURIComponent(orgId)}/usage`, { credentials: 'include' });
       if (!response.ok) throw new Error(`Claude usage unavailable (${response.status})`);
       const usage = await response.json();
-      window.postMessage({ channel, type: 'response', requestId, ok: true, usage }, location.origin);
+      let lastAssistantAt = null;
+      const conversationId = location.pathname.match(/\/chat\/([^/?]+)/)?.[1];
+      if (conversationId) {
+        try {
+          const conversationResponse = await fetch(`/api/organizations/${encodeURIComponent(orgId)}/chat_conversations/${encodeURIComponent(conversationId)}?tree=true&rendering_mode=messages&render_all_tools=true`, { credentials: 'include' });
+          const conversation = conversationResponse.ok ? await conversationResponse.json() : null;
+          const seen = new WeakSet();
+          const walk = (value) => {
+            if (!value || typeof value !== 'object' || seen.has(value)) return;
+            seen.add(value);
+            if (value.sender === 'assistant' && typeof value.created_at === 'string' && (!lastAssistantAt || Date.parse(value.created_at) > Date.parse(lastAssistantAt))) lastAssistantAt = value.created_at;
+            Object.values(value).forEach(walk);
+          };
+          walk(conversation);
+        } catch {}
+      }
+      window.postMessage({ channel, type: 'response', requestId, ok: true, usage, lastAssistantAt }, location.origin);
     } catch (error) {
       window.postMessage({ channel, type: 'response', requestId, ok: false, error: error.message }, location.origin);
     }

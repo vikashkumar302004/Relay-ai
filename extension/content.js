@@ -5,6 +5,7 @@
 
   const providerConfig = core.PROVIDERS[provider];
   let claudeUsage = null;
+  let claudeCacheUntil = null;
   let claudeUsageRequestedAt = 0;
 
   if (provider === 'claude') {
@@ -15,7 +16,10 @@
     addEventListener('message', (event) => {
       if (event.source !== window || event.origin !== location.origin) return;
       if (event.data?.channel !== 'relay-claude-usage-v1' || event.data.type !== 'response') return;
-      if (event.data.ok) claudeUsage = core.parseClaudeUsage(event.data.usage);
+      if (event.data.ok) {
+        claudeUsage = core.parseClaudeUsage(event.data.usage);
+        claudeCacheUntil = event.data.lastAssistantAt ? Date.parse(event.data.lastAssistantAt) + 5 * 60 * 1000 : null;
+      }
       renderAccountUsage();
     });
   }
@@ -30,7 +34,7 @@
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
         <p class="relay-status">Relay reads only the visible conversation when you choose a destination.</p>
-        <div class="relay-account"><div><span>ACCOUNT USAGE</span><b class="relay-account-value">Checking visible provider data…</b></div><small class="relay-account-note">Relay never guesses account quota.</small></div>
+        <div class="relay-account"><div><span>ACCOUNT USAGE</span><b class="relay-account-value">Checking visible provider data…</b><button class="relay-refresh-usage" title="Refresh usage">↻</button></div><div class="relay-usage-windows" hidden></div><small class="relay-account-note">Relay never guesses account quota.</small></div>
         <div class="relay-meter">
           <div class="relay-meter-head"><span>VISIBLE CONTEXT</span><b class="relay-used">Calculating…</b></div>
           <div class="relay-meter-track"><i></i></div>
@@ -72,6 +76,15 @@
     return Number.isNaN(date.getTime()) ? '' : ` · resets ${date.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`;
   }
 
+  function countdown(value) {
+    const milliseconds = new Date(value).getTime() - Date.now();
+    if (!Number.isFinite(milliseconds) || milliseconds <= 0) return 'now';
+    const minutes = Math.ceil(milliseconds / 60000);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
+  }
+
   function requestClaudeUsage() {
     if (provider !== 'claude' || Date.now() - claudeUsageRequestedAt < 30000) return;
     claudeUsageRequestedAt = Date.now();
@@ -83,8 +96,12 @@
     const accountNote = root.querySelector('.relay-account-note');
     if (provider === 'claude' && claudeUsage) {
       const parts = [claudeUsage.session, claudeUsage.weekly].filter(Boolean);
-      accountValue.textContent = parts.map((item) => `${item.label}: ${Math.round(item.remainingPercent)}% left`).join(' · ');
-      accountNote.textContent = parts.map((item) => `${item.label}${formatReset(item.resetsAt)}`).join(' | ');
+      accountValue.textContent = 'Native Claude data';
+      const windows = root.querySelector('.relay-usage-windows');
+      windows.hidden = false;
+      windows.innerHTML = parts.map((item) => `<div class="relay-usage-row"><div><b>${item.label}</b><span>${Math.round(item.remainingPercent)}% left · ${countdown(item.resetsAt)}</span></div><i><em style="width:${item.usedPercent}%"></em></i></div>`).join('');
+      const cacheText = claudeCacheUntil && claudeCacheUntil > Date.now() ? ` · cache ${countdown(claudeCacheUntil)}` : '';
+      accountNote.textContent = `Exact signed-in usage${cacheText}`;
       root.querySelector('.relay-account').classList.add('is-exact');
       return;
     }
@@ -94,6 +111,7 @@
       accountNote.textContent = visible.resetText ? `Exact visible value · resets ${visible.resetText}` : 'Exact value visible on this provider page.';
       root.querySelector('.relay-account').classList.add('is-exact');
     } else {
+      root.querySelector('.relay-usage-windows').hidden = true;
       accountValue.textContent = provider === 'claude' ? 'Syncing Claude usage…' : 'Not visible on this page';
       accountNote.textContent = provider === 'claude' ? 'Reading your signed-in Claude usage locally.' : 'Open the provider usage page for an exact value.';
       root.querySelector('.relay-account').classList.remove('is-exact');
@@ -240,6 +258,7 @@
   fab.addEventListener('click', () => setOpen(!panel.classList.contains('is-open')));
   close.addEventListener('click', () => setOpen(false));
   root.querySelector('.relay-insert').addEventListener('click', insertPending);
+  root.querySelector('.relay-refresh-usage').addEventListener('click', () => { claudeUsageRequestedAt = 0; requestClaudeUsage(); showToast('Refreshing usage…'); });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local' || !changes.relayPendingHandoff) return;
     const next = changes.relayPendingHandoff.newValue;
@@ -247,6 +266,7 @@
   });
   checkPending();
   refreshMetrics();
+  setInterval(() => { if (panel.classList.contains('is-open')) { renderAccountUsage(); requestClaudeUsage(); } }, 30000);
   detectLimit();
   new MutationObserver(scheduleLimitCheck).observe(document.body, { childList: true, subtree: true });
 })();
