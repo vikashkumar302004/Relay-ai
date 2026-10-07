@@ -2,6 +2,8 @@
 
 Relay adds a small continuity control to supported AI websites. It reads the visible conversation only after the user selects another provider, builds a local context capsule, opens the destination, and lets the user insert the capsule for review. It never submits a message automatically.
 
+Relay automatically refreshes its current-chat estimate when a supported site changes routes, opens a new chat, or renders new messages. The **Claude account limit** comes from Claude's signed-in usage response when available; the **This chat estimate** is calculated locally from readable messages and is not an account quota.
+
 Supported in the first release:
 
 - Claude

@@ -34,12 +34,12 @@
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
         <p class="relay-status">Relay reads only the visible conversation when you choose a destination.</p>
-        <div class="relay-account"><div><span>ACCOUNT USAGE</span><b class="relay-account-value">Checking visible provider data…</b><button class="relay-refresh-usage" title="Refresh usage">↻</button></div><div class="relay-usage-windows" hidden></div><small class="relay-account-note">Relay never guesses account quota.</small></div>
+        <div class="relay-account"><div><span>${provider === 'claude' ? 'CLAUDE ACCOUNT LIMIT' : 'ACCOUNT LIMIT'}</span><b class="relay-account-value">Checking provider data…</b><button class="relay-refresh-usage" title="Refresh usage">↻</button></div><div class="relay-usage-windows" hidden></div><small class="relay-account-note">Provider limit and chat size are separate.</small></div>
         <div class="relay-meter">
-          <div class="relay-meter-head"><span>VISIBLE CONTEXT</span><b class="relay-used">Calculating…</b></div>
+          <div class="relay-meter-head"><span>THIS CHAT · ESTIMATE</span><b class="relay-used">Calculating…</b></div>
           <div class="relay-meter-track"><i></i></div>
           <div class="relay-metrics"><span><b class="relay-remaining">—</b> context room</span><span><b class="relay-saving">—</b> handoff capsule</span></div>
-          <small>Conversation context estimate. Account usage is shown separately above.</small>
+          <small>Estimated from messages Relay can read in this chat—not your Claude account quota.</small>
         </div>
         <div class="relay-providers"></div>
         <footer>Local-first · No passwords · Never auto-sends</footer>
@@ -102,12 +102,12 @@
     const accountNote = root.querySelector('.relay-account-note');
     if (provider === 'claude' && claudeUsage) {
       const parts = [claudeUsage.session, claudeUsage.weekly].filter(Boolean);
-      accountValue.textContent = 'Native Claude data';
+      accountValue.textContent = 'Live from Claude';
       const windows = root.querySelector('.relay-usage-windows');
       windows.hidden = false;
       windows.innerHTML = parts.map((item) => `<div class="relay-usage-row"><div><b>${item.label}</b><span>${Math.round(item.remainingPercent)}% left · ${countdown(item.resetsAt)}</span></div><i><em style="width:${item.usedPercent}%"></em></i></div>`).join('');
       const cacheText = claudeCacheUntil && claudeCacheUntil > Date.now() ? ` · cache ${countdown(claudeCacheUntil)}` : '';
-      accountNote.textContent = `Exact signed-in usage${cacheText}`;
+      accountNote.textContent = `Claude's signed-in account usage${cacheText}`;
       root.querySelector('.relay-account').classList.add('is-exact');
       return;
     }
@@ -118,8 +118,8 @@
       root.querySelector('.relay-account').classList.add('is-exact');
     } else {
       root.querySelector('.relay-usage-windows').hidden = true;
-      accountValue.textContent = provider === 'claude' ? 'Syncing Claude usage…' : 'Not visible on this page';
-      accountNote.textContent = provider === 'claude' ? 'Reading your signed-in Claude usage locally.' : 'Open the provider usage page for an exact value.';
+      accountValue.textContent = provider === 'claude' ? 'Waiting for Claude…' : 'Not available on this page';
+      accountNote.textContent = provider === 'claude' ? 'This may take a few seconds. It is unrelated to the current chat.' : 'Relay will not guess a provider limit.';
       root.querySelector('.relay-account').classList.remove('is-exact');
     }
   }
@@ -142,7 +142,14 @@
   function extractMessages() {
     const providerSelectors = {
       chatgpt: ['main [data-message-author-role]', 'main article[data-testid^="conversation-turn-"]'],
-      claude: ['main [data-testid="user-message"]', 'main [data-testid*="assistant"]', 'main .font-claude-response', 'main [class*="font-user-message"]'],
+      claude: [
+        '[data-testid="user-message"]',
+        '[data-testid*="assistant-message"]',
+        '[data-testid^="chat-message"]',
+        '.font-claude-response',
+        '[class*="font-user-message"]',
+        '[data-is-streaming="true"]'
+      ],
       gemini: ['main user-query', 'main model-response', 'main .query-content', 'main .response-container-content'],
       perplexity: ['main [data-testid*="query"]', 'main [data-testid*="answer"]', 'main .prose']
     };
@@ -151,7 +158,7 @@
     const ordered = [...new Set(generic)]
       .filter((element) => !element.closest('#relay-extension-root') && visible(element))
       .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
-    return ordered.slice(-40).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
+    return ordered.slice(-60).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
       .filter((message) => core.cleanText(message.text).length > 2);
   }
 
@@ -164,11 +171,11 @@
     latestHandoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     const { stats } = latestHandoff;
     const hasConversation = messages.some((message) => core.cleanText(message.text).length > 2);
-    root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}%` : 'No conversation yet';
+    root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}% of room` : 'No readable messages';
     root.querySelector('.relay-remaining').textContent = hasConversation ? `~${compactNumber(stats.remainingTokens)}` : '—';
     root.querySelector('.relay-saving').textContent = hasConversation ? `~${compactNumber(stats.capsuleTokens)} tokens` : '—';
     root.querySelector('.relay-meter-track i').style.width = hasConversation ? `${Math.max(2, stats.usedPercent)}%` : '0%';
-    providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} tokens to carry →` : 'Start a conversation first'; });
+    providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} estimated tokens to carry →` : 'No readable chat messages yet'; });
   }
 
   async function createHandoff(target) {
@@ -256,6 +263,34 @@
   }
 
   let limitTimer;
+  let metricsTimer;
+  let currentUrl = location.href;
+
+  function scheduleMetrics(delay = 450) {
+    clearTimeout(metricsTimer);
+    metricsTimer = setTimeout(() => {
+      if (panel.classList.contains('is-open')) refreshMetrics();
+    }, delay);
+  }
+
+  function handleRouteChange() {
+    if (location.href === currentUrl) return;
+    currentUrl = location.href;
+    limitAlerted = false;
+    latestHandoff = null;
+    refreshMetrics();
+    [350, 1000, 2400].forEach((delay) => setTimeout(refreshMetrics, delay));
+  }
+
+  ['pushState', 'replaceState'].forEach((method) => {
+    const original = history[method];
+    history[method] = function relayHistoryChange(...args) {
+      const result = original.apply(this, args);
+      queueMicrotask(handleRouteChange);
+      return result;
+    };
+  });
+  addEventListener('popstate', () => setTimeout(handleRouteChange));
   function scheduleLimitCheck() {
     clearTimeout(limitTimer);
     limitTimer = setTimeout(detectLimit, 650);
@@ -272,7 +307,16 @@
   });
   checkPending();
   refreshMetrics();
-  setInterval(() => { if (panel.classList.contains('is-open')) { renderAccountUsage(); requestClaudeUsage(); } }, 30000);
+  setInterval(() => {
+    handleRouteChange();
+    if (panel.classList.contains('is-open')) { renderAccountUsage(); requestClaudeUsage(); refreshMetrics(); }
+  }, 30000);
+  setInterval(handleRouteChange, 750);
   detectLimit();
-  new MutationObserver(scheduleLimitCheck).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver((mutations) => {
+    if (mutations.every((mutation) => mutation.target === root || mutation.target.closest?.('#relay-extension-root'))) return;
+    handleRouteChange();
+    scheduleLimitCheck();
+    scheduleMetrics();
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
 })();
