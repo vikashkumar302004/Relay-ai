@@ -14,6 +14,11 @@ test('recognizes likely provider limit messages', () => {
   assert.equal(core.hasLimitMessage('Everything is working normally'), false);
 });
 
+test('reads exact usage only when the provider visibly exposes it', () => {
+  assert.deepEqual(core.parseVisibleUsage('5% usage remaining Resets at 8:50 PM'), { remainingPercent: 5, usedPercent: 95, resetText: '8:50 PM' });
+  assert.equal(core.parseVisibleUsage('Free plan Upgrade'), null);
+});
+
 test('estimates tokens and reports context savings', () => {
   assert.equal(core.estimateTokens(''), 0);
   const handoff = core.buildHandoff({

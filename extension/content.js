@@ -15,6 +15,7 @@
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
         <p class="relay-status">Relay reads only the visible conversation when you choose a destination.</p>
+        <div class="relay-account"><div><span>ACCOUNT USAGE</span><b class="relay-account-value">Checking visible provider data…</b></div><small class="relay-account-note">Relay never guesses account quota.</small></div>
         <div class="relay-meter">
           <div class="relay-meter-head"><span>VISIBLE CONTEXT</span><b class="relay-used">Calculating…</b></div>
           <div class="relay-meter-track"><i></i></div>
@@ -86,18 +87,33 @@
 
   async function refreshMetrics() {
     const messages = extractMessages();
+    const pageText = document.body.innerText;
+    const accountUsage = core.parseVisibleUsage(pageText);
+    const accountValue = root.querySelector('.relay-account-value');
+    const accountNote = root.querySelector('.relay-account-note');
+    if (accountUsage) {
+      accountValue.textContent = `${accountUsage.remainingPercent}% remaining`;
+      accountNote.textContent = accountUsage.resetText ? `Exact visible value · resets ${accountUsage.resetText}` : 'Exact value visible on this provider page.';
+      root.querySelector('.relay-account').classList.add('is-exact');
+    } else {
+      accountValue.textContent = pageText.match(/free plan/i) ? 'Unavailable on this Free-plan page' : 'Not visible on this page';
+      accountNote.textContent = 'Open the provider usage page for an exact value.';
+      root.querySelector('.relay-account').classList.remove('is-exact');
+    }
     const { relayContextBudget = 128000 } = await chrome.storage.local.get('relayContextBudget');
     latestHandoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     const { stats } = latestHandoff;
-    root.querySelector('.relay-used').textContent = `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}%`;
-    root.querySelector('.relay-remaining').textContent = `~${stats.remainingTokens.toLocaleString()}`;
-    root.querySelector('.relay-saving').textContent = `${stats.savedPercent}%`;
-    root.querySelector('.relay-meter-track i').style.width = `${Math.max(2, stats.usedPercent)}%`;
-    providerList.querySelectorAll('.relay-provider small').forEach((small) => { small.textContent = `~${stats.capsuleTokens.toLocaleString()} tokens to carry →`; });
+    const hasConversation = messages.some((message) => core.cleanText(message.text).length > 2);
+    root.querySelector('.relay-used').textContent = hasConversation ? `~${stats.visibleTokens.toLocaleString()} tokens · ${stats.usedPercent}%` : 'No conversation yet';
+    root.querySelector('.relay-remaining').textContent = hasConversation ? `~${stats.remainingTokens.toLocaleString()}` : '—';
+    root.querySelector('.relay-saving').textContent = hasConversation ? `${stats.savedPercent}%` : '—';
+    root.querySelector('.relay-meter-track i').style.width = hasConversation ? `${Math.max(2, stats.usedPercent)}%` : '0%';
+    providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} tokens to carry →` : 'Start a conversation first'; });
   }
 
   async function createHandoff(target) {
     const messages = extractMessages();
+    if (!messages.some((message) => core.cleanText(message.text).length > 2)) { showToast('Start a conversation before switching AI.'); return; }
     const { relayContextBudget = 128000 } = await chrome.storage.local.get('relayContextBudget');
     const handoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     chrome.runtime.sendMessage({

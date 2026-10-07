@@ -28,6 +28,15 @@
     return LIMIT_PATTERNS.some((pattern) => pattern.test(text));
   }
 
+  function parseVisibleUsage(text = '') {
+    const normalized = text.replace(/\s+/g, ' ');
+    const remaining = normalized.match(/(?:usage\s+)?(\d{1,3})%\s+(?:usage\s+)?remaining/i)
+      || normalized.match(/remaining\s+(\d{1,3})%/i);
+    if (!remaining) return null;
+    const reset = normalized.match(/resets?(?:\s+at|\s+in)?\s+(\d{1,2}:\d{2}\s*[ap]m|\d+\s*(?:minutes?|hours?|days?))/i);
+    return { remainingPercent: Math.min(100, Number(remaining[1])), usedPercent: Math.max(0, 100 - Number(remaining[1])), resetText: reset ? cleanText(reset[1]) : null };
+  }
+
   function cleanText(value = '') {
     return value.replace(/\s+/g, ' ').trim();
   }
@@ -101,7 +110,7 @@
 
   function buildCapsule(options) { return buildHandoff(options).capsule; }
 
-  const api = { PROVIDERS, providerFromHost, hasLimitMessage, cleanText, estimateTokens, uniqueMessages, buildHandoff, buildCapsule };
+  const api = { PROVIDERS, providerFromHost, hasLimitMessage, parseVisibleUsage, cleanText, estimateTokens, uniqueMessages, buildHandoff, buildCapsule };
   root.RelayCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
