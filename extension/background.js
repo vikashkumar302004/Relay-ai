@@ -15,6 +15,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!targetUrl) return;
     const handoff = {
       ...message.handoff,
+      id: crypto.randomUUID(),
       target: message.target,
       createdAt: Date.now(),
       sourceTabId: sender.tab?.id || null

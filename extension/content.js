@@ -25,7 +25,7 @@
     <button class="relay-fab" type="button" aria-label="Open Relay"><span>ϟ</span></button>
     <section class="relay-panel" aria-hidden="true">
       <header><div><strong>ϟ Relay</strong><small>${providerConfig.name} connected</small></div><button class="relay-close" aria-label="Close">×</button></header>
-      <div class="relay-ready" hidden><b>Context is ready</b><p>A handoff from another AI is waiting.</p><button class="relay-primary relay-insert">Insert into this chat</button></div>
+      <div class="relay-ready" hidden><b>Newest context is ready</b><p class="relay-ready-source">A handoff from another AI is waiting.</p><button class="relay-primary relay-insert">Insert newest context</button></div>
       <div class="relay-main">
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
@@ -52,6 +52,7 @@
   const ready = root.querySelector('.relay-ready');
   let limitAlerted = false;
   let latestHandoff = null;
+  let pendingHandoffId = null;
 
   function setOpen(open) {
     panel.classList.toggle('is-open', open);
@@ -154,7 +155,7 @@
     chrome.runtime.sendMessage({
       type: 'relay-switch',
       target,
-      handoff: { capsule: handoff.capsule, stats: handoff.stats, source: provider, sourceName: providerConfig.name, messageCount: messages.length }
+      handoff: { capsule: handoff.capsule, stats: handoff.stats, source: provider, sourceName: providerConfig.name, sourceTitle: document.title, sourceUrl: location.href, messageCount: messages.length }
     });
     showToast(`Opening ${core.PROVIDERS[target].name}…`);
   }
@@ -207,9 +208,15 @@
   async function checkPending() {
     const { relayPendingHandoff } = await chrome.storage.local.get('relayPendingHandoff');
     if (relayPendingHandoff?.target === provider && Date.now() - relayPendingHandoff.createdAt < 30 * 60 * 1000) {
+      pendingHandoffId = relayPendingHandoff.id;
       ready.hidden = false;
+      ready.querySelector('.relay-ready-source').textContent = `${relayPendingHandoff.sourceName}: ${relayPendingHandoff.sourceTitle || 'latest chat'} · ${relayPendingHandoff.messageCount || 0} messages`;
       setOpen(true);
       fab.classList.add('has-context');
+    } else {
+      pendingHandoffId = null;
+      ready.hidden = true;
+      fab.classList.remove('has-context');
     }
   }
 
@@ -233,6 +240,11 @@
   fab.addEventListener('click', () => setOpen(!panel.classList.contains('is-open')));
   close.addEventListener('click', () => setOpen(false));
   root.querySelector('.relay-insert').addEventListener('click', insertPending);
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== 'local' || !changes.relayPendingHandoff) return;
+    const next = changes.relayPendingHandoff.newValue;
+    if (!next || next.id !== pendingHandoffId) checkPending();
+  });
   checkPending();
   refreshMetrics();
   detectLimit();
