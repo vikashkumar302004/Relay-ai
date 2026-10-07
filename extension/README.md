@@ -9,6 +9,8 @@ Supported in the first release:
 - Gemini
 - Perplexity
 
+On Claude, Relay can read the signed-in account's native five-hour and weekly usage response locally. This is best-effort because Claude's private web interface can change; Relay stores no session cookie and sends no usage data to a Relay server.
+
 ## Load locally in Chrome or Edge
 
 1. Open `chrome://extensions` (Chrome) or `edge://extensions` (Edge).
@@ -24,3 +26,6 @@ Supported in the first release:
 - No AI conversation is sent to a Relay server.
 - The destination message is never submitted automatically.
 
+## Acknowledgement
+
+The Claude native-usage adapter was independently implemented after studying the MIT-licensed Claude Counter project's public approach. Relay retains its own interface, architecture, handoff workflow, and implementation.

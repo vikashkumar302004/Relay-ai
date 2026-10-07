@@ -4,6 +4,21 @@
   if (!provider || document.getElementById('relay-extension-root')) return;
 
   const providerConfig = core.PROVIDERS[provider];
+  let claudeUsage = null;
+  let claudeUsageRequestedAt = 0;
+
+  if (provider === 'claude') {
+    const script = document.createElement('script');
+    script.src = chrome.runtime.getURL('claude-adapter.js');
+    script.onload = () => script.remove();
+    (document.head || document.documentElement).appendChild(script);
+    addEventListener('message', (event) => {
+      if (event.source !== window || event.origin !== location.origin) return;
+      if (event.data?.channel !== 'relay-claude-usage-v1' || event.data.type !== 'response') return;
+      if (event.data.ok) claudeUsage = core.parseClaudeUsage(event.data.usage);
+      renderAccountUsage();
+    });
+  }
   const root = document.createElement('div');
   root.id = 'relay-extension-root';
   root.innerHTML = `
@@ -50,6 +65,40 @@
     setTimeout(() => toast.classList.remove('is-visible'), 2800);
   }
 
+  function formatReset(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : ` · resets ${date.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`;
+  }
+
+  function requestClaudeUsage() {
+    if (provider !== 'claude' || Date.now() - claudeUsageRequestedAt < 30000) return;
+    claudeUsageRequestedAt = Date.now();
+    window.postMessage({ channel: 'relay-claude-usage-v1', type: 'request', requestId: crypto.randomUUID() }, location.origin);
+  }
+
+  function renderAccountUsage(pageText = document.body.innerText) {
+    const accountValue = root.querySelector('.relay-account-value');
+    const accountNote = root.querySelector('.relay-account-note');
+    if (provider === 'claude' && claudeUsage) {
+      const parts = [claudeUsage.session, claudeUsage.weekly].filter(Boolean);
+      accountValue.textContent = parts.map((item) => `${item.label}: ${Math.round(item.remainingPercent)}% left`).join(' · ');
+      accountNote.textContent = parts.map((item) => `${item.label}${formatReset(item.resetsAt)}`).join(' | ');
+      root.querySelector('.relay-account').classList.add('is-exact');
+      return;
+    }
+    const visible = core.parseVisibleUsage(pageText);
+    if (visible) {
+      accountValue.textContent = `${visible.remainingPercent}% remaining`;
+      accountNote.textContent = visible.resetText ? `Exact visible value · resets ${visible.resetText}` : 'Exact value visible on this provider page.';
+      root.querySelector('.relay-account').classList.add('is-exact');
+    } else {
+      accountValue.textContent = provider === 'claude' ? 'Syncing Claude usage…' : 'Not visible on this page';
+      accountNote.textContent = provider === 'claude' ? 'Reading your signed-in Claude usage locally.' : 'Open the provider usage page for an exact value.';
+      root.querySelector('.relay-account').classList.remove('is-exact');
+    }
+  }
+
   function elementRole(element, index) {
     const explicit = element.getAttribute('data-message-author-role');
     if (explicit) return explicit;
@@ -88,18 +137,8 @@
   async function refreshMetrics() {
     const messages = extractMessages();
     const pageText = document.body.innerText;
-    const accountUsage = core.parseVisibleUsage(pageText);
-    const accountValue = root.querySelector('.relay-account-value');
-    const accountNote = root.querySelector('.relay-account-note');
-    if (accountUsage) {
-      accountValue.textContent = `${accountUsage.remainingPercent}% remaining`;
-      accountNote.textContent = accountUsage.resetText ? `Exact visible value · resets ${accountUsage.resetText}` : 'Exact value visible on this provider page.';
-      root.querySelector('.relay-account').classList.add('is-exact');
-    } else {
-      accountValue.textContent = pageText.match(/free plan/i) ? 'Unavailable on this Free-plan page' : 'Not visible on this page';
-      accountNote.textContent = 'Open the provider usage page for an exact value.';
-      root.querySelector('.relay-account').classList.remove('is-exact');
-    }
+    requestClaudeUsage();
+    renderAccountUsage(pageText);
     const { relayContextBudget = 128000 } = await chrome.storage.local.get('relayContextBudget');
     latestHandoff = core.buildHandoff({ provider, title: document.title, url: location.href, messages, contextBudget: relayContextBudget });
     const { stats } = latestHandoff;

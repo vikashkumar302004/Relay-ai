@@ -37,6 +37,18 @@
     return { remainingPercent: Math.min(100, Number(remaining[1])), usedPercent: Math.max(0, 100 - Number(remaining[1])), resetText: reset ? cleanText(reset[1]) : null };
   }
 
+  function parseClaudeUsage(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const normalize = (value, label) => {
+      if (!value || !Number.isFinite(value.utilization)) return null;
+      const usedPercent = Math.max(0, Math.min(100, value.utilization));
+      return { label, usedPercent, remainingPercent: Math.max(0, 100 - usedPercent), resetsAt: typeof value.resets_at === 'string' ? value.resets_at : null };
+    };
+    const session = normalize(raw.five_hour, '5-hour');
+    const weekly = normalize(raw.seven_day, 'Weekly');
+    return session || weekly ? { session, weekly } : null;
+  }
+
   function cleanText(value = '') {
     return value.replace(/\s+/g, ' ').trim();
   }
@@ -110,7 +122,7 @@
 
   function buildCapsule(options) { return buildHandoff(options).capsule; }
 
-  const api = { PROVIDERS, providerFromHost, hasLimitMessage, parseVisibleUsage, cleanText, estimateTokens, uniqueMessages, buildHandoff, buildCapsule };
+  const api = { PROVIDERS, providerFromHost, hasLimitMessage, parseVisibleUsage, parseClaudeUsage, cleanText, estimateTokens, uniqueMessages, buildHandoff, buildCapsule };
   root.RelayCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

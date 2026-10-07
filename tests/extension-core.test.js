@@ -19,6 +19,13 @@ test('reads exact usage only when the provider visibly exposes it', () => {
   assert.equal(core.parseVisibleUsage('Free plan Upgrade'), null);
 });
 
+test('normalizes Claude native usage windows', () => {
+  const usage = core.parseClaudeUsage({ five_hour: { utilization: 74.6, resets_at: '2026-10-07T18:30:00Z' }, seven_day: { utilization: 20 } });
+  assert.equal(Math.round(usage.session.remainingPercent), 25);
+  assert.equal(usage.weekly.remainingPercent, 80);
+  assert.equal(core.parseClaudeUsage({}), null);
+});
+
 test('estimates tokens and reports context savings', () => {
   assert.equal(core.estimateTokens(''), 0);
   const handoff = core.buildHandoff({

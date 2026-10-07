@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Relay — Switch AI, Keep Context",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Carry the useful context from one AI conversation into another without starting over.",
   "permissions": ["storage", "tabs", "notifications"],
   "host_permissions": [
@@ -40,6 +40,12 @@
       "js": ["core.js", "content.js"],
       "css": ["content.css", "metrics.css", "account.css"],
       "run_at": "document_idle"
+    }
+  ]
+  ,"web_accessible_resources": [
+    {
+      "resources": ["claude-adapter.js"],
+      "matches": ["https://claude.ai/*"]
     }
   ]
 }
