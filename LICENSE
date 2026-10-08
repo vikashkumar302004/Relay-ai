@@ -1,56 +1,21 @@
-Relay Source-Available License 1.0
+MIT License
 
-Copyright (c) 2026 Vikash Kumar. All rights reserved.
+Copyright (c) 2026 Vikash Kumar
 
-1. Ownership
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Relay, including its source code, browser extension, desktop application,
-interface, documentation, branding, artwork, and original product concepts,
-is owned by Vikash Kumar unless a third-party component states otherwise.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-2. Permission for personal use
-
-You may download, install, and use an unmodified copy of Relay for personal,
-non-commercial evaluation and everyday use.
-
-3. Restrictions
-
-Without prior written permission from Vikash Kumar, you may not:
-
-- copy or redistribute Relay or a substantial portion of its source code;
-- publish modified versions or derivative products based on Relay;
-- sell, sublicense, rent, host, or commercially distribute Relay;
-- remove or alter copyright, attribution, or license notices;
-- use the Relay name, logo, interface, or branding for another product;
-- present Relay or its original implementation as your own work;
-- use the source code to create a substantially similar competing product.
-
-4. Contributions
-
-Submitting a contribution does not transfer ownership of Relay. Unless a
-separate written agreement says otherwise, you grant Vikash Kumar a
-perpetual, worldwide, royalty-free license to use, modify, and distribute
-your contribution as part of Relay.
-
-5. Third-party software
-
-Third-party libraries and referenced material remain subject to their own
-licenses. This license does not limit rights granted directly by those
-third-party licenses.
-
-6. No warranty
-
-RELAY IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
-INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-AND NON-INFRINGEMENT. THE OWNER IS NOT LIABLE FOR ANY CLAIM, DAMAGE, OR OTHER
-LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
-
-7. Permission requests
-
-For commercial use, redistribution, partnerships, or other permissions,
-contact the owner through:
-
-https://github.com/vikashkumar302004
-
-Using Relay outside the permissions in Section 2 requires prior written
-permission from Vikash Kumar.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

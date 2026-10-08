@@ -1,5 +1,5 @@
 Relay
-Copyright (c) 2026 Vikash Kumar. All rights reserved.
+Copyright (c) 2026 Vikash Kumar.
 
 Relay is an original, independently maintained product.
 
@@ -8,4 +8,6 @@ licenses. References to Claude, ChatGPT, Gemini, Perplexity, Chrome, Edge,
 Codex, and other products are for compatibility identification only. Relay
 is not endorsed by or affiliated with their respective owners.
 
-See LICENSE for permitted use and restrictions.
+Relay is open-source software licensed under the MIT License. Copies or
+substantial portions must retain the copyright and permission notice included
+in LICENSE.

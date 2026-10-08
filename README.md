@@ -159,13 +159,11 @@ Current automated result: **12 tests passed**.
 
 Relay is independently designed and built by [Vikash Kumar](https://github.com/vikashkumar302004).
 
-The product identity, interface, and implementation are maintained independently. <code>creo-main</code> is not part of this repository.
-
 ## License and ownership
 
-Copyright © 2026 Vikash Kumar. All rights reserved.
+Relay is open-source software released under the [MIT License](LICENSE).
 
-Relay is **source-available**, not open source under a permissive license. Personal, non-commercial use of an unmodified copy is allowed. Copying, rebranding, resale, commercial distribution, and derivative competing products require prior written permission.
+You may use, copy, modify, distribute, and build on Relay. The copyright and MIT permission notice must remain in copies or substantial portions of the software, preserving credit to **Vikash Kumar** as the original author.
 
 See [LICENSE](LICENSE) and [NOTICE](NOTICE) for the complete terms. Third-party dependencies remain governed by their respective licenses.
 

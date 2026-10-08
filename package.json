@@ -2,7 +2,7 @@
   "name": "relay",
   "version": "1.4.0",
   "author": "Vikash Kumar",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "description": "Local-first AI continuity tool for carrying useful context between providers",
   "main": "main.js",
   "scripts": {
