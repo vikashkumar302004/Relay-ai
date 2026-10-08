@@ -5,6 +5,8 @@
   if (!provider || document.getElementById('relay-extension-root')) return;
 
   const providerConfig = core.PROVIDERS[provider];
+  const accountUsageMarkup = provider === 'claude' ? `
+        <div class="relay-account"><div><span>CLAUDE ACCOUNT LIMIT</span><b class="relay-account-value">Checking Claude usage…</b><button class="relay-refresh-usage" title="Refresh Claude usage">↻</button></div><div class="relay-usage-windows" hidden></div><small class="relay-account-note">Account usage and current-chat size are separate.</small></div>` : '';
   let claudeUsage = null;
   let claudeCacheUntil = null;
   let claudeUsageRequestedAt = 0;
@@ -36,12 +38,12 @@
         <p class="relay-kicker">SWITCH WITHOUT STARTING OVER</p>
         <h2>Continue this chat in another AI.</h2>
         <p class="relay-status">Relay reads only the visible conversation when you choose a destination.</p>
-        <div class="relay-account"><div><span>${provider === 'claude' ? 'CLAUDE ACCOUNT LIMIT' : 'ACCOUNT LIMIT'}</span><b class="relay-account-value">Checking provider data…</b><button class="relay-refresh-usage" title="Refresh usage">↻</button></div><div class="relay-usage-windows" hidden></div><small class="relay-account-note">Provider limit and chat size are separate.</small></div>
+        ${accountUsageMarkup}
         <div class="relay-meter">
           <div class="relay-meter-head"><span>THIS CHAT · ESTIMATE</span><b class="relay-used">Calculating…</b></div>
           <div class="relay-meter-track"><i></i></div>
           <div class="relay-metrics"><span><b class="relay-remaining">—</b> context room</span><span><b class="relay-saving">—</b> handoff capsule</span></div>
-          <small>Estimated from messages Relay can read in this chat—not your Claude account quota.</small>
+          <small>Estimated from messages Relay can read in this chat—not your provider account quota.</small>
           <button class="relay-retry-chat" type="button">Retry chat detection</button>
         </div>
         <div class="relay-providers"></div>
@@ -50,7 +52,6 @@
     </section>
     <div class="relay-toast" role="status"></div>`;
   document.documentElement.appendChild(root);
-  if (provider !== 'claude') root.querySelector('.relay-account').hidden = true;
 
   const fab = root.querySelector('.relay-fab');
   const panel = root.querySelector('.relay-panel');
@@ -188,7 +189,7 @@
     providerList.querySelectorAll('.relay-provider').forEach((button) => { button.disabled = !hasConversation; button.querySelector('small').textContent = hasConversation ? `~${stats.capsuleTokens.toLocaleString()} estimated tokens to carry →` : 'Messages not detected—retry'; });
     root.querySelector('.relay-meter>small').textContent = hasConversation
       ? 'Estimated locally from readable messages—not your provider account quota.'
-      : `Messages detect nahi hue—chat load hone do, then tap retry. Adapter: ${providerConfig.name}.`;
+      : `No messages detected. Wait for the chat to load, then select Retry. Provider: ${providerConfig.name}.`;
   }
 
   async function createHandoff(target) {
@@ -215,7 +216,13 @@
   function findComposer() {
     const byProvider = {
       chatgpt: ['#prompt-textarea', '[contenteditable="true"][data-virtualkeyboard="true"]'],
-      claude: ['div.ProseMirror[contenteditable="true"]', '[contenteditable="true"][role="textbox"]'],
+      claude: [
+        '[data-testid="chat-input"] [contenteditable="true"]',
+        'div.ProseMirror[contenteditable="true"]',
+        'fieldset [contenteditable="true"]',
+        '[contenteditable="true"][role="textbox"]',
+        '[contenteditable="true"][data-placeholder]'
+      ],
       gemini: [
         'rich-textarea [contenteditable="true"]',
         '.ql-editor[contenteditable="true"]',
@@ -234,10 +241,14 @@
     const { relayPendingHandoff } = await chrome.storage.local.get('relayPendingHandoff');
     if (!relayPendingHandoff || relayPendingHandoff.target !== provider) return;
     await navigator.clipboard.writeText(relayPendingHandoff.capsule).catch(() => {});
-    const composer = findComposer();
+    let composer = findComposer();
+    for (let attempt = 0; !composer && attempt < 10; attempt += 1) {
+      showToast(attempt === 0 ? 'Waiting for the message box…' : 'Still loading the message box…');
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      composer = findComposer();
+    }
     if (!composer) {
-      showToast('Composer not found. Context copied—press Ctrl+V.');
-      await chrome.storage.local.remove('relayPendingHandoff');
+      showToast('Message box not ready. Context copied—press Ctrl+V, or retry Insert.');
       return;
     }
     composer.focus();
@@ -251,9 +262,16 @@
       composer.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: relayPendingHandoff.capsule }));
     }
     const insertedText = composer instanceof HTMLTextAreaElement || composer instanceof HTMLInputElement ? composer.value : composer.innerText;
-    await chrome.storage.local.remove('relayPendingHandoff');
-    ready.hidden = true;
-    showToast(insertedText.includes('Relay Context Capsule') ? 'Context inserted. Review it, then send.' : 'Context copied—press Ctrl+V in the message box.');
+    const insertionVerified = insertedText.includes('Relay Context Capsule');
+    if (insertionVerified) {
+      await chrome.storage.local.remove('relayPendingHandoff');
+      pendingHandoffId = null;
+      ready.hidden = true;
+      fab.classList.remove('has-context');
+      showToast('Context inserted. Review it, then send.');
+    } else {
+      showToast('Automatic insert was blocked. Press Ctrl+V, or select Insert again.');
+    }
   }
 
   async function checkPending() {
@@ -319,7 +337,7 @@
   fab.addEventListener('click', () => setOpen(!panel.classList.contains('is-open')));
   close.addEventListener('click', () => setOpen(false));
   root.querySelector('.relay-insert').addEventListener('click', insertPending);
-  root.querySelector('.relay-refresh-usage').addEventListener('click', () => { claudeUsageRequestedAt = 0; requestClaudeUsage(); showToast('Refreshing usage…'); });
+  root.querySelector('.relay-refresh-usage')?.addEventListener('click', () => { claudeUsageRequestedAt = 0; requestClaudeUsage(); showToast('Refreshing Claude usage…'); });
   root.querySelector('.relay-retry-chat').addEventListener('click', () => {
     refreshMetrics();
     [500, 1400].forEach((delay) => setTimeout(refreshMetrics, delay));
