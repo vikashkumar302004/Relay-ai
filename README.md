@@ -6,9 +6,9 @@
 
 Relay is a local-first browser extension and Windows companion that carries useful working context between Claude, ChatGPT, Gemini, and Perplexity—without asking you to explain the same task again.
 
-[Download Extension v0.5.5](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.5.zip) · [Open Website](https://vikashkumar302004.github.io/Relay-ai/) · [Meet the Creator](https://vikashkumar302004.github.io/Relay-ai/about.html)
+[Download Extension v0.5.6](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.6.zip) · [Open Website](https://vikashkumar302004.github.io/Relay-ai/) · [Meet the Creator](https://vikashkumar302004.github.io/Relay-ai/about.html)
 
-![Extension](https://img.shields.io/badge/Extension-v0.5.5-a98cff?style=for-the-badge)
+![Extension](https://img.shields.io/badge/Extension-v0.5.6-a98cff?style=for-the-badge)
 ![Desktop](https://img.shields.io/badge/Desktop-v1.4.0-82f4ca?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/Tests-12%2F12-37c99b?style=for-the-badge)
 ![Privacy](https://img.shields.io/badge/Privacy-Local--first-15171a?style=for-the-badge)
@@ -47,7 +47,7 @@ The **This Chat · Estimate** meter is available across providers. It estimates 
 
 ### Install
 
-1. Download [Relay-Extension-0.5.5.zip](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.5.zip).
+1. Download [Relay-Extension-0.5.6.zip](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.6.zip).
 2. Extract the ZIP.
 3. Open <code>chrome://extensions</code> in Chrome or <code>edge://extensions</code> in Edge.
 4. Enable **Developer mode**.
@@ -64,7 +64,7 @@ The **This Chat · Estimate** meter is available across providers. It estimates 
 
 If a provider changes its page structure, Relay displays **Messages not detected—retry** instead of silently producing an empty handoff.
 
-## What v0.5.5 includes
+## What v0.5.6 includes
 
 - Separate message adapters for Claude, ChatGPT, Gemini, and Perplexity
 - Automatic chat and route-change detection
@@ -144,7 +144,7 @@ Current automated result: **12 tests passed**.
 
 | Component | Version | Download |
 |---|---:|---|
-| Browser extension | 0.5.5 | [ZIP](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.5.zip) |
+| Browser extension | 0.5.6 | [ZIP](https://github.com/vikashkumar302004/Relay-ai/raw/refs/heads/main/website/Relay-Extension-0.5.6.zip) |
 | Windows desktop | 1.4.0 | Website installer section |
 
 ## Roadmap

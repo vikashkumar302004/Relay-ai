@@ -18,13 +18,13 @@
     },
     chatgpt: {
       selectors: [
-        '[data-message-author-role]',
-        '[data-testid^="conversation-turn-"]',
-        'article[data-testid*="conversation"]',
-        '[data-turn-id]',
-        '[data-message-id]',
-        '[data-message-model-slug]',
-        '[class*="conversation-turn"]',
+        'main [data-message-author-role]',
+        'main [data-testid^="conversation-turn-"]',
+        'main article[data-testid*="conversation"]',
+        'main [data-turn-id]',
+        'main [data-message-id]',
+        'main [data-message-model-slug]',
+        'main [class*="conversation-turn"]',
         '[role="main"] article'
       ],
       role(element, index) {

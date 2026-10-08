@@ -160,17 +160,28 @@
   }
 
   function extractMessages() {
-    const candidates = (adapter?.selectors || []).flatMap((selector) => [...document.querySelectorAll(selector)]);
+    const visibleMatches = (selectors) => selectors
+      .flatMap((selector) => [...document.querySelectorAll(selector)])
+      .filter((element) => !element.closest('#relay-extension-root') && visible(element));
+    const candidates = visibleMatches(adapter?.selectors || []);
     const fallbackSelectors = provider === 'chatgpt'
-      ? '[data-message-author-role], [data-turn-id], [data-message-id], [data-message-model-slug], [role="main"] article, main article'
+      ? '[data-message-author-role], main [data-testid^="conversation-turn-"], main [data-turn-id], main article, [role="main"] article'
       : '[data-message-author-role], [data-testid^="conversation-turn-"], main article, main [data-testid*="message"]';
-    const generic = candidates.length ? candidates : [...document.querySelectorAll(fallbackSelectors)];
+    const fallback = candidates.length ? [] : visibleMatches(fallbackSelectors.split(',').map((selector) => selector.trim()));
+    const generic = candidates.length ? candidates : fallback;
     const ordered = [...new Set(generic)]
-      .filter((element) => !element.closest('#relay-extension-root') && visible(element))
       .sort((a, b) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
     const messages = ordered.slice(-80).map((element, index) => ({ role: elementRole(element, index), text: element.innerText }))
       .filter((message) => core.cleanText(message.text).length > 2);
-    return core.uniqueMessages(messages);
+    const unique = core.uniqueMessages(messages);
+    if (unique.length || provider !== 'chatgpt') return unique;
+
+    const conversationRoot = document.querySelector('main') || document.querySelector('[role="main"]');
+    const conversationText = core.cleanText(conversationRoot?.innerText || '');
+    const emptyChat = /^(what can i help with|how can i help|ready when you are)[?.!\s]*$/i.test(conversationText);
+    return conversationText.length >= 80 && !emptyChat
+      ? [{ role: 'assistant', text: conversationText }]
+      : [];
   }
 
   async function refreshMetrics() {
